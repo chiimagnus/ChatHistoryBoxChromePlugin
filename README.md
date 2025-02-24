@@ -1,6 +1,6 @@
-# ChatHistoryBox 浏览器插件
+# ChatHistoryBox
 
-一款智能保存AI对话记录的Chrome扩展程序
+一款保存与AI对话记录的浏览器扩展程序。
 
 ## 📦 功能特性
 - **智能检测**：自动识别常见AI聊天界面
@@ -28,24 +28,24 @@
 ```
 
 ## TODOs
-- [x] 点击悬浮按钮，然后弹出"保存此页面对话"，点击此按钮然后就保存成功。
-- [ ] 对话记录保存页面（我想知道，可以如何获取当前跟AI对话页面的聊天记录？）
-- [ ] 数据以文件的形式，保存在用户的本地文件管理器中。具体的形式用户可选，比如保存称为json文件，或者markdown文件。
-
-## 参考案例
-![alt text](Resource/1.png)
-![alt text](Resource/2.png)
-![alt text](Resource/3.jpg)
-[ChatGPT_2025-02-23-12-23-20.md](Resource/ChatGPT_2025-02-23-12-23-20.md)
+- [ ] 点击悬浮按钮，然后弹出"保存此页面对话"，点击此按钮然后就保存成功。
+- [ ] 数据以json文件的形式，保存在用户的本地文件管理器中。
 
 ## 🛠 技术架构
-```bash
-ChatHistoryBox/
-├── manifest.json        # 插件配置清单
-├── popup.html           # 格式选择弹窗，用户界面
-├── service-worker.js    # 后台服务核心逻辑
-├── content-script.js    # 页面脚本注入
-└── icons/               # 插件图标集
+
+```
+ChatHistoryBoxChromePlugin/
+├── src/
+│   ├── popup/       # 弹出窗口的积木
+│   ├── options/     # 设置页面的积木
+│   ├── contentScript/ # 注入网页的积木
+│   ├── background/  # 后台服务的积木
+│   ├── components/  # 自动导入的Vue组件，在弹出窗口和设置页面中共享
+│   ├── styles/      # 弹出窗口和设置页面共享的样式
+│   ├── assets/      # 在Vue组件中使用的资源文件
+│   └── manifest.ts  # 插件的身份证（名字/权限等）
+├── extension/       # 打包后的成品积木
+└── package.json     # 积木组装说明书
 ```
 
 ## 📍 使用说明
@@ -56,14 +56,9 @@ ChatHistoryBox/
 3. 点击按钮自动保存对话记录
 4. 文件下载到本地默认下载目录
 
-### 高级功能
-- **格式切换**：通过插件弹窗选择保存格式
-- **批量保存**：支持连续多次保存不同对话
-- **时间戳命名**：自动生成包含保存时间的文件名
-
 ## 问题分析
 需要补充以下信息才能继续开发：
-1. 请提供目标网站（如DeepSeek）的对话界面HTML结构示例，我需要根据实际DOM结构调整选择器✅
+1. 请提供目标网站（如DeepSeek）的对话界面HTML结构示例，我需要根据实际DOM结构调整选择器
 
 2. 是否需要支持多个AI服务（ChatGPT/Claude等）的对话保存？需要为每个服务编写特定的提取逻辑
 
@@ -79,3 +74,6 @@ ChatHistoryBox/
 
 4. 实现与Swift应用的数据同步机制
 请告诉我你希望优先实现哪个部分，或者需要调整现有方案中的哪些设计。
+
+## 致谢
+本项目基于[vitesse-webext插件模版](https://github.com/antfu-collective/vitesse-webext)进行开发。
