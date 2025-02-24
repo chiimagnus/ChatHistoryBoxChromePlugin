@@ -1,138 +1,81 @@
-# WebExtension Vite Starter
+# ChatHistoryBox 浏览器插件
 
-A [Vite](https://vitejs.dev/) powered WebExtension ([Chrome](https://developer.chrome.com/docs/extensions/reference/), [FireFox](https://addons.mozilla.org/en-US/developers/), etc.) starter template.
+一款智能保存AI对话记录的Chrome扩展程序
 
-<p align="center">
-<sub>Popup</sub><br/>
-<img width="655" src="https://user-images.githubusercontent.com/11247099/126741643-813b3773-17ff-4281-9737-f319e00feddc.png"><br/>
-<sub>Options Page</sub><br/>
-<img width="655" src="https://user-images.githubusercontent.com/11247099/126741653-43125b62-6578-4452-83a7-bee19be2eaa2.png"><br/>
-<sub>Inject Vue App into the Content Script</sub><br/>
-<img src="https://user-images.githubusercontent.com/11247099/130695439-52418cf0-e186-4085-8e19-23fe808a274e.png">
-</p>
+## 📦 功能特性
+- **智能检测**：自动识别常见AI聊天界面
+- **一键保存**：通过悬浮按钮快速保存对话
+- **单一格式支持**：JSON保存格式
+- **本地存储**：数据直接保存到用户设备
 
-## Features
-
-- ⚡️ **Instant HMR** - use **Vite** on dev (no more refresh!)
-- 🥝 Vue 3 - Composition API, [`<script setup>` syntax](https://github.com/vuejs/rfcs/blob/master/active-rfcs/0040-script-setup.md) and more!
-- 💬 Effortless communications - powered by [`webext-bridge`](https://github.com/antfu/webext-bridge) and [VueUse](https://github.com/antfu/vueuse) storage
-- 🌈 [UnoCSS](https://github.com/unocss/unocss) - The instant on-demand Atomic CSS engine.
-- 🦾 [TypeScript](https://www.typescriptlang.org/) - type safe
-- 📦 [Components auto importing](./src/components)
-- 🌟 [Icons](./src/components) - Access to icons from any iconset directly
-- 🖥 Content Script - Use Vue even in content script
-- 🌍 WebExtension - isomorphic extension for Chrome, Firefox, and others
-- 📃 Dynamic `manifest.json` with full type support
-
-## Pre-packed
-
-### WebExtension Libraries
-
-- [`webextension-polyfill`](https://github.com/mozilla/webextension-polyfill) - WebExtension browser API Polyfill with types
-- [`webext-bridge`](https://github.com/antfu/webext-bridge) - effortlessly communication between contexts
-
-### Vite Plugins
-
-- [`unplugin-auto-import`](https://github.com/antfu/unplugin-auto-import) - Directly use `browser` and Vue Composition API without importing
-- [`unplugin-vue-components`](https://github.com/antfu/vite-plugin-components) - components auto import
-- [`unplugin-icons`](https://github.com/antfu/unplugin-icons) - icons as components
-  - [Iconify](https://iconify.design) - use icons from any icon sets [🔍Icônes](https://icones.netlify.app/)
-
-### Vue Plugins
-
-- [VueUse](https://github.com/antfu/vueuse) - collection of useful composition APIs
-
-### UI Frameworks
-
-- [UnoCSS](https://github.com/unocss/unocss) - the instant on-demand Atomic CSS engine
-
-### Coding Style
-
-- Use Composition API with [`<script setup>` SFC syntax](https://github.com/vuejs/rfcs/pull/227)
-- [ESLint](https://eslint.org/) with [@antfu/eslint-config](https://github.com/antfu/eslint-config), single quotes, no semi
-
-### Dev tools
-
-- [TypeScript](https://www.typescriptlang.org/)
-- [pnpm](https://pnpm.js.org/) - fast, disk space efficient package manager
-- [esno](https://github.com/antfu/esno) - TypeScript / ESNext node runtime powered by esbuild
-- [npm-run-all](https://github.com/mysticatea/npm-run-all) - Run multiple npm-scripts in parallel or sequential
-- [web-ext](https://github.com/mozilla/web-ext) - Streamlined experience for developing web extensions
-
-## Use the Template
-
-### GitHub Template
-
-[Create a repo from this template on GitHub](https://github.com/antfu/vitesse-webext/generate).
-
-### Clone to local
-
-If you prefer to do it manually with the cleaner git history
-
-> If you don't have pnpm installed, run: npm install -g pnpm
-
-```bash
-npx degit antfu/vitesse-webext my-webext
-cd my-webext
-pnpm i
+```json
+{
+  "platform": "DeepSeek", // 标识对话平台来源
+  "messages": [ // 对话消息数组
+    {
+      "type": "user", // 消息类型（用户提问）
+      "content": "微信公众号文章的网址是什么", // 用户原始问题
+      "timestamp": "2025-02-24T05:55:04.543Z" // ISO 8601时间戳（注意年份2025可能是测试数据）
+    },
+    {
+      "type": "assistant", // 消息类型（AI回复）
+      "content": "已深度思考（用时 0 秒）", // 简版回复文本
+      "details": "<div...>", // 包含SVG图标的HTML格式渲染内容（用于展示思考过程）
+      "thinkingTime": "0" // 系统处理耗时（秒）
+    }
+  ]
+}
 ```
 
-## Usage
+## TODOs
+- [x] 点击悬浮按钮，然后弹出"保存此页面对话"，点击此按钮然后就保存成功。
+- [ ] 对话记录保存页面（我想知道，可以如何获取当前跟AI对话页面的聊天记录？）
+- [ ] 数据以文件的形式，保存在用户的本地文件管理器中。具体的形式用户可选，比如保存称为json文件，或者markdown文件。
 
-### Folders
+## 参考案例
+![alt text](Resource/1.png)
+![alt text](Resource/2.png)
+![alt text](Resource/3.jpg)
+[ChatGPT_2025-02-23-12-23-20.md](Resource/ChatGPT_2025-02-23-12-23-20.md)
 
-- `src` - main source.
-  - `contentScript` - scripts and components to be injected as `content_script`
-  - `background` - scripts for background.
-  - `components` - auto-imported Vue components that are shared in popup and options page.
-  - `styles` - styles shared in popup and options page
-  - `assets` - assets used in Vue components
-  - `manifest.ts` - manifest for the extension.
-- `extension` - extension package root.
-  - `assets` - static assets (mainly for `manifest.json`).
-  - `dist` - built files, also serve stub entry for Vite on development.
-- `scripts` - development and bundling helper scripts.
-
-### Development
-
+## 🛠 技术架构
 ```bash
-pnpm dev
+ChatHistoryBox/
+├── manifest.json        # 插件配置清单
+├── popup.html           # 格式选择弹窗，用户界面
+├── service-worker.js    # 后台服务核心逻辑
+├── content-script.js    # 页面脚本注入
+└── icons/               # 插件图标集
 ```
 
-Then **load extension in browser with the `extension/` folder**.
+## 📍 使用说明
 
-For Firefox developers, you can run the following command instead:
+### 基本操作流程
+1. 访问AI聊天网站（如DeepSeek）
+2. 页面右下角出现💾按钮
+3. 点击按钮自动保存对话记录
+4. 文件下载到本地默认下载目录
 
-```bash
-pnpm dev-firefox
-```
+### 高级功能
+- **格式切换**：通过插件弹窗选择保存格式
+- **批量保存**：支持连续多次保存不同对话
+- **时间戳命名**：自动生成包含保存时间的文件名
 
-`web-ext` auto reload the extension when `extension/` files changed.
+## 问题分析
+需要补充以下信息才能继续开发：
+1. 请提供目标网站（如DeepSeek）的对话界面HTML结构示例，我需要根据实际DOM结构调整选择器✅
 
-> While Vite handles HMR automatically in the most of the case, [Extensions Reloader](https://chrome.google.com/webstore/detail/fimgfedafeadlieiabdeeaodndnlbhid) is still recommended for cleaner hard reloading.
+2. 是否需要支持多个AI服务（ChatGPT/Claude等）的对话保存？需要为每个服务编写特定的提取逻辑
 
-## Using Gitpod
+3. 保存时是否需要包含元数据（如对话时间、模型版本等）？
 
-If you have a web browser, you can get a fully pre-configured development environment with one click:
+建议下一步：
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/antfu/vitesse-webext)
+1. 先实现JSON格式的保存功能
 
-### Build
+2. 添加成功保存的反馈提示
 
-To build the extension, run
+3. 开发历史记录管理界面
 
-```bash
-pnpm build
-```
-
-And then pack files under `extension`, you can upload `extension.crx` or `extension.xpi` to appropriate extension store.
-
-## Credits
-
-[![Volta](https://user-images.githubusercontent.com/904724/195351818-9e826ea9-12a0-4b06-8274-352743cd2047.png)](https://volta.net)
-
-This template is originally made for the [volta.net](https://volta.net) browser extension.
-
-## Variations
-
-This is a variant of [Vitesse](https://github.com/antfu/vitesse), check out the [full variations list](https://github.com/antfu/vitesse#variations).
+4. 实现与Swift应用的数据同步机制
+请告诉我你希望优先实现哪个部分，或者需要调整现有方案中的哪些设计。
