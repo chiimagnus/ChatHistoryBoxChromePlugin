@@ -1,0 +1,50 @@
+name: 创建发布版本
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送带v前缀的标签时触发，如v0.1.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+        
+      - name: 设置Node环境
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16' # 选择合适的Node版本
+          
+      - name: 安装依赖
+        run: |
+          npm install -g pnpm
+          pnpm install
+          
+      - name: 构建扩展
+        run: pnpm build
+        
+      - name: 打包扩展文件
+        run: |
+          cd dist # 假设构建后的文件在dist目录下
+          zip -r ../ChatHistoryBox-${{ github.ref_name }}.zip *
+          
+      - name: 创建发布
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ChatHistoryBox-${{ github.ref_name }}.zip
+          body: |
+            # ChatHistoryBox ${{ github.ref_name }}
+            
+            这是自动生成的发布说明，包含了打包好的Chrome扩展。
+            
+            ## 安装方法
+            
+            1. 下载ZIP文件
+            2. 在Chrome浏览器中访问`chrome://extensions/`
+            3. 启用"开发者模式"
+            4. 点击"加载已解压的扩展程序"
+            5. 选择解压后的文件夹
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
