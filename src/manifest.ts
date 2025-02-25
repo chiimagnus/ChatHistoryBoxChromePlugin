@@ -39,12 +39,14 @@ export async function getManifest() {
       'storage',
       'activeTab',
       'sidePanel',
+      'downloads',
     ],
     host_permissions: ['*://*/*'],
     content_scripts: [
       {
         matches: [
-          '<all_urls>',
+          '*://*.deepseek.com/*',
+          '*://*.deepseek.ai/*',
         ],
         js: [
           'dist/contentScripts/index.global.js',
