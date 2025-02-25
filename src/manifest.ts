@@ -47,6 +47,9 @@ export async function getManifest() {
         matches: [
           '*://*.deepseek.com/*',
           '*://*.deepseek.ai/*',
+          '*://deepseek.com/*',
+          '*://deepseek.ai/*',
+          '*://chat.deepseek.com/*',
         ],
         js: [
           'dist/contentScripts/index.global.js',

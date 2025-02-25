@@ -38,14 +38,40 @@ async function extractChatHistory() {
     const title = chatData.title || 'chat'
     const fileName = `deepseek_${dateString}_${timeString}_${title}.json`
 
-    // 4. 使用浏览器API下载文件
-    await browser.downloads.download({
-      url,
-      filename: fileName,
-      saveAs: true,
-    })
+    // 4. 使用消息传递方式下载文件
+    // 这里改用 webext-bridge 发送消息到后台脚本
+    try {
+      // 方法1：尝试使用 sendMessage 发送消息到后台
+      await browser.runtime.sendMessage({
+        type: 'download-chat-history',
+        data: {
+          url,
+          fileName,
+        },
+      })
 
-    extractionStatus.value = '聊天记录已保存!'
+      extractionStatus.value = '聊天记录已保存!'
+    }
+    catch (downloadError) {
+      console.error('下载失败 (方法1):', downloadError)
+
+      // 方法2：如果方法1失败，尝试直接使用 a 标签下载
+      try {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = fileName
+        a.style.display = 'none'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+
+        extractionStatus.value = '聊天记录已保存!'
+      }
+      catch (fallbackError) {
+        console.error('下载失败 (方法2):', fallbackError)
+        extractionStatus.value = '下载失败，请检查浏览器权限'
+      }
+    }
 
     // 5. 清理临时URL
     setTimeout(() => {
@@ -64,50 +90,82 @@ async function extractChatHistory() {
 
 // 从页面提取聊天数据的函数
 async function getChatData() {
-  // 尝试查找聊天记录容器元素
-  const messageElements = document.querySelectorAll('[data-message-id]')
+  // DeepSeek聊天容器识别
+  const _chatContainer = document.querySelector('.main-layout__content') || document.body
 
-  if (messageElements.length === 0) {
-    return null
+  // 查找所有对话元素
+  // 我们寻找所有顶级对话容器，包括用户问题和AI回答
+  const userMessages = Array.from(document.querySelectorAll('div[class^="fbb"]')) // 用户消息
+  const aiMessages = Array.from(document.querySelectorAll('div[class^="e16"]')) // AI思考消息
+  const aiResponseMessages = Array.from(document.querySelectorAll('div.ds-markdown.ds-markdown--block')) // AI最终回答
+
+  // eslint-disable-next-line no-console
+  console.log('找到的消息数量:', {
+    用户消息: userMessages.length,
+    AI思考: aiMessages.length,
+    AI回答: aiResponseMessages.length,
+  })
+
+  if (userMessages.length === 0 && aiResponseMessages.length === 0) {
+    return null // 未找到任何消息
   }
 
   // 提取聊天标题
   const titleElement = document.querySelector('title')
-  const title = titleElement ? titleElement.textContent.replace(' - DeepSeek Chat', '').trim() : 'Untitled Chat'
+  const title = titleElement ? titleElement.textContent.trim() : 'DeepSeek对话'
 
-  // 提取消息
+  // 构建消息数组
   const messages = []
 
-  messageElements.forEach((element) => {
-    // 判断消息类型 (用户/AI)
-    const isUser = element.querySelector('[data-testid="user-message"]') !== null
-    const isAssistant = element.querySelector('[data-testid="assistant-message"]') !== null
-
-    // 提取消息内容
-    let content = ''
-    const contentElement = element.querySelector('.markdown-body') // Markdown内容
-
-    if (contentElement) {
-      content = contentElement.innerHTML
-    }
-    else {
-      const textElement = element.querySelector('div[class*="whitespace-pre-wrap"]')
-      if (textElement) {
-        content = textElement.textContent
-      }
-    }
-
-    // 提取消息ID
-    const messageId = element.getAttribute('data-message-id')
-
-    if (content) {
+  // 添加用户消息
+  userMessages.forEach((element, index) => {
+    const text = element.textContent.trim()
+    if (text) {
       messages.push({
-        id: messageId,
-        role: isUser ? 'user' : (isAssistant ? 'assistant' : 'system'),
-        content,
-        timestamp: new Date().toISOString(), // DeepSeek可能不显示时间戳，使用当前时间
+        id: `user-${index}`,
+        role: 'user',
+        content: text,
+        timestamp: new Date().toISOString(),
       })
     }
+  })
+
+  // 添加AI思考消息 (可选，如果需要的话)
+  aiMessages.forEach((element, index) => {
+    const paragraphs = Array.from(element.querySelectorAll('p[class^="ba9"]'))
+    if (paragraphs.length > 0) {
+      const text = paragraphs.map(p => p.textContent.trim()).join('\n\n')
+      if (text) {
+        messages.push({
+          id: `ai-thinking-${index}`,
+          role: 'thinking',
+          content: text,
+          timestamp: new Date().toISOString(),
+        })
+      }
+    }
+  })
+
+  // 添加AI最终回答
+  aiResponseMessages.forEach((element, index) => {
+    // 提取HTML内容以保留格式
+    const content = element.innerHTML
+    if (content) {
+      messages.push({
+        id: `ai-response-${index}`,
+        role: 'assistant',
+        content,
+        rawText: element.textContent.trim(),
+        timestamp: new Date().toISOString(),
+      })
+    }
+  })
+
+  // 按页面自然顺序排序消息
+  messages.sort((a, b) => {
+    const idNumA = Number.parseInt(a.id.split('-')[1], 10)
+    const idNumB = Number.parseInt(b.id.split('-')[1], 10)
+    return idNumA - idNumB
   })
 
   return {

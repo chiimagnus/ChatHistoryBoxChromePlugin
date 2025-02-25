@@ -63,3 +63,31 @@ onMessage('get-current-tab', async () => {
     }
   }
 })
+
+// 添加下载功能消息监听
+// 注册runtime.onMessage监听器处理下载请求
+browser.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
+  if (message.type === 'download-chat-history') {
+    const { url, fileName } = message.data
+
+    // 使用downloads API执行下载
+    browser.downloads.download({
+      url,
+      filename: fileName,
+      saveAs: true,
+    })
+      .then(() => {
+        sendResponse({ success: true })
+      })
+      .catch((error) => {
+        console.error('Background下载失败:', error)
+        sendResponse({ success: false, error: error.message })
+      })
+
+    // 返回true表示会异步发送响应
+    return true
+  }
+})
+
+// eslint-disable-next-line no-console
+console.log('background script loaded')
