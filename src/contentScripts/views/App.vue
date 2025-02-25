@@ -93,20 +93,19 @@ async function getChatData() {
   // DeepSeek聊天容器识别
   const _chatContainer = document.querySelector('.main-layout__content') || document.body
 
-  // 查找所有对话元素
-  // 我们寻找所有顶级对话容器，包括用户问题和AI回答
-  const userMessages = Array.from(document.querySelectorAll('div[class^="fbb"]')) // 用户消息
-  const aiMessages = Array.from(document.querySelectorAll('div[class^="e16"]')) // AI思考消息
-  const aiResponseMessages = Array.from(document.querySelectorAll('div.ds-markdown.ds-markdown--block')) // AI最终回答
+  // 查找所有对话元素 - 按照DOM顺序（从上到下）
+  const userMessages = Array.from(document.querySelectorAll('div[class^="fbb"]'))
+  const aiThinkingElements = Array.from(document.querySelectorAll('div[class^="e16"]'))
+  const aiResponseElements = Array.from(document.querySelectorAll('div.ds-markdown.ds-markdown--block'))
 
   // eslint-disable-next-line no-console
   console.log('找到的消息数量:', {
     用户消息: userMessages.length,
-    AI思考: aiMessages.length,
-    AI回答: aiResponseMessages.length,
+    AI思考: aiThinkingElements.length,
+    AI回答: aiResponseElements.length,
   })
 
-  if (userMessages.length === 0 && aiResponseMessages.length === 0) {
+  if (userMessages.length === 0 && aiResponseElements.length === 0) {
     return null // 未找到任何消息
   }
 
@@ -114,58 +113,98 @@ async function getChatData() {
   const titleElement = document.querySelector('title')
   const title = titleElement ? titleElement.textContent.trim() : 'DeepSeek对话'
 
-  // 构建消息数组
-  const messages = []
+  // 收集所有消息并保存它们的位置信息
+  const allMessageElements = []
 
   // 添加用户消息
-  userMessages.forEach((element, index) => {
-    const text = element.textContent.trim()
-    if (text) {
-      messages.push({
-        id: `user-${index}`,
-        role: 'user',
-        content: text,
-        timestamp: new Date().toISOString(),
-      })
-    }
+  userMessages.forEach((element) => {
+    allMessageElements.push({
+      type: 'user',
+      element,
+      position: getElementPosition(element),
+    })
   })
 
-  // 添加AI思考消息 (可选，如果需要的话)
-  aiMessages.forEach((element, index) => {
-    const paragraphs = Array.from(element.querySelectorAll('p[class^="ba9"]'))
-    if (paragraphs.length > 0) {
-      const text = paragraphs.map(p => p.textContent.trim()).join('\n\n')
-      if (text) {
+  // 添加AI思考
+  aiThinkingElements.forEach((element) => {
+    allMessageElements.push({
+      type: 'thinking',
+      element,
+      position: getElementPosition(element),
+    })
+  })
+
+  // 添加AI回答
+  aiResponseElements.forEach((element) => {
+    allMessageElements.push({
+      type: 'assistant',
+      element,
+      position: getElementPosition(element),
+    })
+  })
+
+  // 按页面位置从上到下排序所有消息
+  allMessageElements.sort((a, b) => a.position - b.position)
+
+  // 构建最终的消息数组
+  const messages = []
+
+  // 处理页面中的所有消息，按顺序组织成规范格式
+  let messageIndex = 0
+  let currentType = null
+
+  allMessageElements.forEach((messageElement) => {
+    // 如果遇到用户消息，开始新的对话组
+    if (messageElement.type === 'user') {
+      currentType = 'user'
+      const content = messageElement.element.textContent.trim()
+      if (content) {
         messages.push({
-          id: `ai-thinking-${index}`,
-          role: 'thinking',
-          content: text,
+          id: `user-${messageIndex}`,
+          role: 'user',
+          content,
           timestamp: new Date().toISOString(),
         })
       }
     }
-  })
-
-  // 添加AI最终回答
-  aiResponseMessages.forEach((element, index) => {
-    // 提取HTML内容以保留格式
-    const content = element.innerHTML
-    if (content) {
-      messages.push({
-        id: `ai-response-${index}`,
-        role: 'assistant',
-        content,
-        rawText: element.textContent.trim(),
-        timestamp: new Date().toISOString(),
-      })
+    // 如果遇到AI思考，并且上一条是用户消息，则关联到当前对话组
+    else if (messageElement.type === 'thinking' && currentType === 'user') {
+      currentType = 'thinking'
+      const paragraphs = Array.from(messageElement.element.querySelectorAll('p[class^="ba9"]'))
+      if (paragraphs.length > 0) {
+        const content = paragraphs.map(p => p.textContent.trim()).join('\n\n')
+        if (content) {
+          messages.push({
+            id: `ai-thinking-${messageIndex}`,
+            role: 'thinking',
+            content,
+            timestamp: new Date().toISOString(),
+          })
+        }
+      }
     }
-  })
+    // 如果遇到AI回答，并且上一条是用户消息或AI思考，则关联到当前对话组
+    else if (messageElement.type === 'assistant' && (currentType === 'user' || currentType === 'thinking')) {
+      currentType = 'assistant'
+      const content = messageElement.element.innerHTML
+      if (content) {
+        messages.push({
+          id: `ai-response-${messageIndex}`,
+          role: 'assistant',
+          content,
+          rawText: messageElement.element.textContent.trim(),
+          timestamp: new Date().toISOString(),
+        })
+      }
 
-  // 按页面自然顺序排序消息
-  messages.sort((a, b) => {
-    const idNumA = Number.parseInt(a.id.split('-')[1], 10)
-    const idNumB = Number.parseInt(b.id.split('-')[1], 10)
-    return idNumA - idNumB
+      // 一个完整对话组结束，增加索引准备下一组
+      messageIndex++
+      currentType = null
+    }
+    // 如果遇到看似孤立的AI回答，记录警告
+    else if (messageElement.type === 'assistant' && currentType === null) {
+      console.warn('警告：发现没有对应用户问题的AI回答，可能是DOM结构变化导致用户问题未被正确识别', messageElement)
+    }
   })
 
   return {
@@ -174,6 +213,13 @@ async function getChatData() {
     timestamp: new Date().toISOString(),
     messages,
   }
+}
+
+// 获取元素在页面中的垂直位置（用于排序）
+function getElementPosition(element) {
+  const rect = element.getBoundingClientRect()
+  // 用Y坐标作为排序依据，确保从上到下的顺序
+  return rect.top + window.scrollY
 }
 </script>
 
