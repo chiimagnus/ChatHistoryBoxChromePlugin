@@ -32,11 +32,8 @@ async function extractChatHistory() {
     const url = URL.createObjectURL(blob)
 
     // 3. 生成文件名 (日期时间+对话标题)
-    const date = new Date()
-    const dateString = date.toISOString().split('T')[0]
-    const timeString = date.toTimeString().split(' ')[0].replace(/:/g, '-')
     const title = chatData.title || 'chat'
-    const fileName = `deepseek_${dateString}_${timeString}_${title}.json`
+    const fileName = `deepseek_${title}.json`
 
     // 4. 使用消息传递方式下载文件
     // 这里改用 webext-bridge 发送消息到后台脚本
@@ -163,7 +160,6 @@ async function getChatData() {
           id: `user-${messageIndex}`,
           role: 'user',
           content,
-          timestamp: new Date().toISOString(),
         })
       }
     }
@@ -178,7 +174,6 @@ async function getChatData() {
             id: `ai-thinking-${messageIndex}`,
             role: 'thinking',
             content,
-            timestamp: new Date().toISOString(),
           })
         }
       }
@@ -193,7 +188,6 @@ async function getChatData() {
           role: 'assistant',
           content,
           rawText: messageElement.element.textContent.trim(),
-          timestamp: new Date().toISOString(),
         })
       }
 
@@ -210,7 +204,6 @@ async function getChatData() {
   return {
     title,
     url: window.location.href,
-    timestamp: new Date().toISOString(),
     messages,
   }
 }
