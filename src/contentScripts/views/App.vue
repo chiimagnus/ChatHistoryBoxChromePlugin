@@ -31,7 +31,7 @@ async function extractChatHistory() {
     const blob = new Blob([jsonData], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
 
-    // 3. 生成文件名 (日期时间+对话标题)
+    // 3. 生成文件名
     const title = chatData.title || 'chat'
     const fileName = `deepseek_${title}.json`
 
@@ -107,8 +107,8 @@ async function getChatData() {
   }
 
   // 提取聊天标题
-  const titleElement = document.querySelector('title')
-  const title = titleElement ? titleElement.textContent.trim() : 'DeepSeek对话'
+  const titleElement = document.querySelector('div[class^="d8ed659a"]')
+  const title = titleElement ? titleElement.textContent.trim() : '未提取到标题'
 
   // 收集所有消息并保存它们的位置信息
   const allMessageElements = []
