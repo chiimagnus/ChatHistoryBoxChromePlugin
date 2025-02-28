@@ -118,7 +118,6 @@ export class DeepseekExtractor extends BaseExtractor {
             id: `ai-response-${messageIndex}`,
             role: 'assistant',
             content,
-            rawText: messageElement.element.textContent.trim(),
           })
         }
 

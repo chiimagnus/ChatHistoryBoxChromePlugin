@@ -98,7 +98,6 @@ export class YuanbaoExtractor extends BaseExtractor {
             id: `ai-response-${messageIndex}`,
             role: 'assistant',
             content,
-            rawText: contentElement.textContent.trim(),
           })
         }
 

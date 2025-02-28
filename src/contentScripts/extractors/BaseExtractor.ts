@@ -109,7 +109,6 @@ export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'thinking'
   content: string
-  rawText?: string
 }
 
 /**
