@@ -25,6 +25,15 @@
 - 实现适当的错误处理和日志记录。
 - 所有用户数据传输必须使用HTTPS。
 - 采用模块化设计，保持每个文件<400行。
+- 遵循模块化架构（Modular Architecture）原则：
+  - 将系统划分为独立的功能模块（如deepseek/tencent_yuanbao模块）
+  - 每个模块封装自己的实现细节，通过明确定义的接口进行交互
+- 实践组件化开发（Component-Based Development）：
+  - 将功能封装为可复用的组件（如创建HtmlExtractor抽象基类）
+  - 通过组合不同组件构建系统（如DeepseekExtractor和YuanbaoExtractor都继承自同一个基类）
+- 采用可扩展性设计（Extensible Design）：
+  - 使用策略模式（Strategy Pattern）实现不同平台的提取逻辑
+  - 应用工厂模式（Factory Pattern）创建对应的提取器实例
 
 ### 解决问题时：
 - 全面阅读相关代码文件，理解所有代码的功能和逻辑。
