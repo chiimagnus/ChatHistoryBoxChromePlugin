@@ -40,9 +40,12 @@
 ## 开发指南 ⭐
 
 ### 如何修改提取逻辑
-如果DeepSeek网站的HTML结构发生变化，可能需要更新选择器。主要修改`src/contentScripts/views/App.vue`文件中的以下选择器：
+如果DeepSeek网站的HTML结构发生变化，可能需要更新选择器。主要修改`src/contentScripts/extractors/DeepseekExtractor.ts`文件中的以下选择器：
 
 ```javascript
+// 标题选择器
+const titleElement = document.querySelector('div[class^="d8ed659a"]')
+
 // 用户消息选择器
 const userMessages = Array.from(document.querySelectorAll('div[class^="fbb"]'))
 
@@ -51,6 +54,22 @@ const aiMessages = Array.from(document.querySelectorAll('div[class^="e16"]'))
 
 // AI最终回答选择器
 const aiResponseMessages = Array.from(document.querySelectorAll('div.ds-markdown.ds-markdown--block'))
+```
+
+如果DeepSeek网站的HTML结构发生变化，可能需要更新选择器。主要修改`src/contentScripts/extractors/YuanbaoExtractor.ts`文件中的以下选择器：
+
+```javascript
+// 标题选择器
+const titleElement = document.querySelector('span.t-button__text')
+
+// 用户消息选择器
+const userMessages = Array.from(document.querySelectorAll('hyc-content-text'))
+
+// AI思考消息选择器
+const aiThinkingElements = Array.from(document.querySelectorAll('hyc-common-markdown hyc-common-markdown-style'))
+
+// AI最终回答选择器
+const aiResponseElements = Array.from(document.querySelectorAll('hyc-common-markdown hyc-common-markdown-style'))
 ```
 
 ### 调试方法

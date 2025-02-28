@@ -18,18 +18,18 @@ export class YuanbaoExtractor extends BaseExtractor {
    */
   protected async getChatData(): Promise<ChatData | null> {
     // 腾讯元宝聊天容器识别
-    // 注意：以下选择器需要根据实际元宝网页DOM结构进行调整
     const _chatContainer = document.querySelector('.chat-container') || document.body
 
     // 查找所有对话元素 - 按照DOM顺序（从上到下）
-    // 注意：以下是示例选择器，需要根据实际元宝网页DOM结构进行调整
-    const userMessages = Array.from(document.querySelectorAll('.user-message'))
-    const aiResponseElements = Array.from(document.querySelectorAll('.ai-message'))
+    const userMessages = Array.from(document.querySelectorAll('div.hyc-content-text'))
+    const aiThinkingElements = Array.from(document.querySelectorAll('div.hyc-common-markdown.hyc-common-markdown-style'))
+    const aiResponseElements = Array.from(document.querySelectorAll('div.hyc-common-markdown.hyc-common-markdown-style:not(.hyc-thinking)'))
 
     // 记录找到的消息数量
     // eslint-disable-next-line no-console
     console.log('找到的消息数量:', {
       用户消息: userMessages.length,
+      AI思考: aiThinkingElements.length,
       AI回答: aiResponseElements.length,
     })
 
@@ -38,7 +38,7 @@ export class YuanbaoExtractor extends BaseExtractor {
     }
 
     // 提取聊天标题
-    const titleElement = document.querySelector('.chat-title')
+    const titleElement = document.querySelector('span.t-button__text')
     const title = titleElement ? titleElement.textContent.trim() : '未提取到标题'
 
     // 收集所有消息并保存它们的位置信息
@@ -48,6 +48,15 @@ export class YuanbaoExtractor extends BaseExtractor {
     userMessages.forEach((element) => {
       allMessageElements.push({
         type: 'user',
+        element,
+        position: this.getElementPosition(element),
+      })
+    })
+
+    // 添加AI思考
+    aiThinkingElements.forEach((element) => {
+      allMessageElements.push({
+        type: 'thinking',
         element,
         position: this.getElementPosition(element),
       })
@@ -76,9 +85,7 @@ export class YuanbaoExtractor extends BaseExtractor {
       // 如果遇到用户消息，开始新的对话组
       if (messageElement.type === 'user') {
         currentType = 'user'
-        // 提取用户消息内容，可能需要根据实际DOM结构调整
-        const contentElement = messageElement.element.querySelector('.message-content') || messageElement.element
-        const content = contentElement.textContent.trim()
+        const content = messageElement.element.textContent.trim()
         if (content) {
           messages.push({
             id: `user-${messageIndex}`,
@@ -87,12 +94,25 @@ export class YuanbaoExtractor extends BaseExtractor {
           })
         }
       }
+      // 如果遇到AI思考，并且上一条是用户消息，则关联到当前对话组
+      else if (messageElement.type === 'thinking' && currentType === 'user') {
+        currentType = 'thinking'
+        const paragraphs = Array.from(messageElement.element.querySelectorAll('p[class^="ba9"]'))
+        if (paragraphs.length > 0) {
+          const content = paragraphs.map(p => p.textContent.trim()).join('\n\n')
+          if (content) {
+            messages.push({
+              id: `ai-thinking-${messageIndex}`,
+              role: 'thinking',
+              content,
+            })
+          }
+        }
+      }
       // 如果遇到AI回答，并且上一条是用户消息，则关联到当前对话组
       else if (messageElement.type === 'assistant' && currentType === 'user') {
         currentType = 'assistant'
-        // 提取AI回答内容，可能需要根据实际DOM结构调整
-        const contentElement = messageElement.element.querySelector('.message-content') || messageElement.element
-        const content = contentElement.innerHTML
+        const content = messageElement.element.innerHTML
         if (content) {
           messages.push({
             id: `ai-response-${messageIndex}`,
