@@ -50,6 +50,11 @@ export async function getManifest() {
           '*://deepseek.com/*',
           '*://deepseek.ai/*',
           '*://chat.deepseek.com/*',
+          // 添加腾讯元宝网站的匹配规则
+          '*://*.yuanbao.qq.com/*',
+          '*://*.yuanbao.tencent.com/*',
+          '*://yuanbao.qq.com/*',
+          '*://yuanbao.tencent.com/*',
         ],
         js: [
           'dist/contentScripts/index.global.js',
