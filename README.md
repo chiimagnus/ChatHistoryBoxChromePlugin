@@ -56,20 +56,20 @@ const aiMessages = Array.from(document.querySelectorAll('div[class^="e16"]'))
 const aiResponseMessages = Array.from(document.querySelectorAll('div.ds-markdown.ds-markdown--block'))
 ```
 
-如果DeepSeek网站的HTML结构发生变化，可能需要更新选择器。主要修改`src/contentScripts/extractors/YuanbaoExtractor.ts`文件中的以下选择器：
+如果腾讯元宝网站的HTML结构发生变化，可能需要更新选择器。主要修改`src/contentScripts/extractors/YuanbaoExtractor.ts`文件中的以下选择器：
 
 ```javascript
 // 标题选择器
 const titleElement = document.querySelector('span.t-button__text')
 
 // 用户消息选择器
-const userMessages = Array.from(document.querySelectorAll('hyc-content-text'))
+const userMessages = Array.from(document.querySelectorAll('div.hyc-content-text'))
 
 // AI思考消息选择器
-const aiThinkingElements = Array.from(document.querySelectorAll('hyc-common-markdown hyc-common-markdown-style'))
+const aiThinkingElements = Array.from(document.querySelectorAll('div.hyc-component-reasoner__think-content'))
 
 // AI最终回答选择器
-const aiResponseElements = Array.from(document.querySelectorAll('hyc-common-markdown hyc-common-markdown-style'))
+const aiResponseElements = Array.from(document.querySelectorAll('div.hyc-component-reasoner__text'))
 ```
 
 ### 调试方法

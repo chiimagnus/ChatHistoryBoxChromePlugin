@@ -22,8 +22,8 @@ export class YuanbaoExtractor extends BaseExtractor {
 
     // 查找所有对话元素 - 按照DOM顺序（从上到下）
     const userMessages = Array.from(document.querySelectorAll('div.hyc-content-text'))
-    const aiThinkingElements = Array.from(document.querySelectorAll('div.hyc-common-markdown.hyc-common-markdown-style'))
-    const aiResponseElements = Array.from(document.querySelectorAll('div.hyc-common-markdown.hyc-common-markdown-style:not(.hyc-thinking)'))
+    const aiThinkingElements = Array.from(document.querySelectorAll('div.hyc-component-reasoner__think-content'))
+    const aiResponseElements = Array.from(document.querySelectorAll('div.hyc-component-reasoner__text'))
 
     // 记录找到的消息数量
     // eslint-disable-next-line no-console
@@ -97,20 +97,17 @@ export class YuanbaoExtractor extends BaseExtractor {
       // 如果遇到AI思考，并且上一条是用户消息，则关联到当前对话组
       else if (messageElement.type === 'thinking' && currentType === 'user') {
         currentType = 'thinking'
-        const paragraphs = Array.from(messageElement.element.querySelectorAll('p[class^="ba9"]'))
-        if (paragraphs.length > 0) {
-          const content = paragraphs.map(p => p.textContent.trim()).join('\n\n')
-          if (content) {
-            messages.push({
-              id: `ai-thinking-${messageIndex}`,
-              role: 'thinking',
-              content,
-            })
-          }
+        const content = messageElement.element.textContent.trim()
+        if (content) {
+          messages.push({
+            id: `ai-thinking-${messageIndex}`,
+            role: 'thinking',
+            content,
+          })
         }
       }
-      // 如果遇到AI回答，并且上一条是用户消息，则关联到当前对话组
-      else if (messageElement.type === 'assistant' && currentType === 'user') {
+      // 如果遇到AI回答，并且上一条是用户消息或AI思考，则关联到当前对话组
+      else if (messageElement.type === 'assistant' && (currentType === 'user' || currentType === 'thinking')) {
         currentType = 'assistant'
         const content = messageElement.element.innerHTML
         if (content) {
