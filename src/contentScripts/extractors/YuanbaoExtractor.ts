@@ -2,7 +2,7 @@
  * 腾讯元宝聊天记录提取器
  * 实现了从腾讯元宝网站提取聊天记录的具体逻辑
  */
-import { BaseExtractor, type ChatData } from './BaseExtractor'
+import { BaseExtractor, type ChatData, type ChatMessage } from './BaseExtractor'
 
 export class YuanbaoExtractor extends BaseExtractor {
   /**
@@ -39,92 +39,123 @@ export class YuanbaoExtractor extends BaseExtractor {
 
     // 提取聊天标题
     const titleElement = document.querySelector('span.t-button__text')
-    const title = titleElement ? titleElement.textContent.trim() : '未提取到标题'
+    const title = titleElement?.textContent?.trim() || '未提取到标题'
+
+    // 定义消息元素类型接口
+    interface MessageElement {
+      type: 'user' | 'thinking' | 'assistant'
+      element: Element
+      position: number
+      content: string
+    }
 
     // 收集所有消息并保存它们的位置信息
-    const allMessageElements = []
+    const allMessageElements: MessageElement[] = []
 
     // 添加用户消息
     userMessages.forEach((element) => {
-      allMessageElements.push({
-        type: 'user',
-        element,
-        position: this.getElementPosition(element),
-      })
+      const content = element.textContent?.trim() || ''
+      if (content) {
+        allMessageElements.push({
+          type: 'user',
+          element,
+          position: this.getElementPosition(element),
+          content,
+        })
+      }
     })
 
     // 添加AI思考
     aiThinkingElements.forEach((element) => {
-      allMessageElements.push({
-        type: 'thinking',
-        element,
-        position: this.getElementPosition(element),
-      })
+      const content = element.textContent?.trim() || ''
+      if (content) {
+        allMessageElements.push({
+          type: 'thinking',
+          element,
+          position: this.getElementPosition(element),
+          content,
+        })
+      }
     })
 
     // 添加AI回答
     aiResponseElements.forEach((element) => {
-      allMessageElements.push({
-        type: 'assistant',
-        element,
-        position: this.getElementPosition(element),
-      })
+      const content = element.innerHTML || ''
+      if (content) {
+        allMessageElements.push({
+          type: 'assistant',
+          element,
+          position: this.getElementPosition(element),
+          content,
+        })
+      }
     })
 
     // 按页面位置从上到下排序所有消息
     allMessageElements.sort((a, b) => a.position - b.position)
 
     // 构建最终的消息数组
-    const messages = []
+    const messages: ChatMessage[] = []
 
-    // 处理页面中的所有消息，按顺序组织成规范格式
-    let messageIndex = 0
-    let currentType = null
+    // 使用更可靠的对话分组方法
+    // 创建对话组数组，每组包含一个用户问题和对应的AI思考与回答
+    const conversations: { user?: MessageElement, thinking?: MessageElement, assistant?: MessageElement }[] = []
+    let currentConversation: { user?: MessageElement, thinking?: MessageElement, assistant?: MessageElement } = {}
 
-    allMessageElements.forEach((messageElement) => {
-      // 如果遇到用户消息，开始新的对话组
+    // 遍历所有消息元素，按顺序组织成对话组
+    for (const messageElement of allMessageElements) {
       if (messageElement.type === 'user') {
-        currentType = 'user'
-        const content = messageElement.element.textContent.trim()
-        if (content) {
-          messages.push({
-            id: `user-${messageIndex}`,
-            role: 'user',
-            content,
-          })
+        // 如果当前已有对话组且不为空，则保存当前对话组并创建新的
+        if (Object.keys(currentConversation).length > 0) {
+          conversations.push(currentConversation)
+          currentConversation = {}
         }
+        // 添加用户消息到新对话组
+        currentConversation.user = messageElement
       }
-      // 如果遇到AI思考，并且上一条是用户消息，则关联到当前对话组
-      else if (messageElement.type === 'thinking' && currentType === 'user') {
-        currentType = 'thinking'
-        const content = messageElement.element.textContent.trim()
-        if (content) {
-          messages.push({
-            id: `ai-thinking-${messageIndex}`,
-            role: 'thinking',
-            content,
-          })
-        }
+      else if (messageElement.type === 'thinking' && currentConversation.user && !currentConversation.thinking) {
+        // 添加AI思考到当前对话组
+        currentConversation.thinking = messageElement
       }
-      // 如果遇到AI回答，并且上一条是用户消息或AI思考，则关联到当前对话组
-      else if (messageElement.type === 'assistant' && (currentType === 'user' || currentType === 'thinking')) {
-        currentType = 'assistant'
-        const content = messageElement.element.innerHTML
-        if (content) {
-          messages.push({
-            id: `ai-response-${messageIndex}`,
-            role: 'assistant',
-            content,
-          })
-        }
+      else if (messageElement.type === 'assistant' && currentConversation.user && !currentConversation.assistant) {
+        // 添加AI回答到当前对话组
+        currentConversation.assistant = messageElement
+      }
+      // 如果遇到看似孤立的AI回答或思考，记录警告
+      else {
+        console.warn('警告：发现无法匹配到对话组的消息元素', messageElement)
+      }
+    }
 
-        // 一个完整对话组结束，增加索引准备下一组
-        messageIndex++
-        currentType = null
+    // 添加最后一个对话组
+    if (Object.keys(currentConversation).length > 0) {
+      conversations.push(currentConversation)
+    }
+
+    // 将对话组转换为消息数组
+    conversations.forEach((conversation, index) => {
+      if (conversation.user) {
+        messages.push({
+          id: `user-${index}`,
+          role: 'user',
+          content: conversation.user.content,
+        })
       }
-      // 如果遇到看似孤立的AI回答，记录警告
-      else if (messageElement.type === 'assistant' && currentType === null) {
-        console.warn('警告：发现没有对应用户问题的AI回答，可能是DOM结构变化导致用户问题未被正确识别', messageElement)
+
+      if (conversation.thinking) {
+        messages.push({
+          id: `ai-thinking-${index}`,
+          role: 'thinking',
+          content: conversation.thinking.content,
+        })
+      }
+
+      if (conversation.assistant) {
+        messages.push({
+          id: `ai-response-${index}`,
+          role: 'assistant',
+          content: conversation.assistant.content,
+        })
       }
     })
 
