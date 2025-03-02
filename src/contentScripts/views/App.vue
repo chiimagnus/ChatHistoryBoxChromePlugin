@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import 'uno.css'
 import { ExtractorFactory } from '../extractors'
+import logo from '~/assets/logo.svg'
 
 // 状态管理
 const isExtracting = ref(false)
@@ -52,18 +53,12 @@ async function extractChatHistory() {
 
     <!-- 提取按钮 -->
     <button
-      class="flex w-12 h-12 rounded-full shadow cursor-pointer border-none"
-      :class="isExtracting ? 'bg-gray-500' : 'bg-blue-600 hover:bg-blue-700'"
+      class="flex w-12 h-12 items-center justify-center bg-transparent border-none cursor-pointer"
       :disabled="isExtracting"
       @click="extractChatHistory"
     >
-      <div class="block m-auto text-white text-lg">
-        <div v-if="isExtracting" class="animate-spin">
-          ⏳
-        </div>
-        <div v-else>
-          💾
-        </div>
+      <div class="block w-full h-full text-white" :class="{ 'animate-spin': isExtracting }">
+        <img :src="logo" alt="Extract" class="w-full h-full" :style="{ opacity: isExtracting ? '0.5' : '1' }">
       </div>
     </button>
   </div>
