@@ -1,7 +1,7 @@
 {
   "name": "chat-history-box",
   "displayName": "ChatHistoryBox",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "packageManager": "pnpm@9.7.1",
   "description": "帮助你保存AI Chat对话记录为JSON文件(deepseek，腾讯元宝)。",

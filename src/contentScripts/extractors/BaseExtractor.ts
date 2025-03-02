@@ -54,7 +54,7 @@ export abstract class BaseExtractor {
       // 5. 清理临时URL
       URL.revokeObjectURL(url)
     }
-    catch (error) {
+    catch (error: any) {
       console.error('提取失败:', error)
       this.extractionStatus = `提取失败: ${error.message}`
     }
@@ -96,6 +96,125 @@ export abstract class BaseExtractor {
   }
 
   /**
+   * 通用HTML内容清理方法
+   * 清理HTML内容，保留关键格式同时移除不必要的标签和样式
+   * @param element 要处理的HTML元素或HTML字符串
+   * @returns 清理后的文本内容
+   */
+  protected cleanHTML(element: Element | string): string {
+    // 创建临时容器用于处理
+    const tempContainer = document.createElement('div')
+
+    // 根据输入类型设置内容
+    if (typeof element === 'string') {
+      tempContainer.innerHTML = element
+    }
+    else {
+      tempContainer.innerHTML = element.innerHTML || ''
+    }
+
+    // 处理代码块，保留代码格式但移除过多的样式信息
+    const codeBlocks = tempContainer.querySelectorAll('pre, code')
+    codeBlocks.forEach((codeBlock) => {
+      // 获取原始代码文本
+      const codeText = codeBlock.textContent || ''
+      // 如果是pre元素，创建新的pre元素保留代码块格式
+      if (codeBlock.tagName.toLowerCase() === 'pre') {
+        const newPre = document.createElement('pre')
+        newPre.textContent = codeText
+        codeBlock.parentNode?.replaceChild(newPre, codeBlock)
+      }
+      // 如果是内联code元素，创建新的code元素
+      else {
+        const newCode = document.createElement('code')
+        newCode.textContent = codeText
+        codeBlock.parentNode?.replaceChild(newCode, codeBlock)
+      }
+    })
+
+    // 保留基本格式元素，但移除复杂样式
+    const formatElements = tempContainer.querySelectorAll('p, h1, h2, h3, h4, h5, h6, ul, ol, li, br, strong, em, b, i, a, blockquote, table, tr, td, th')
+    formatElements.forEach((el) => {
+      // 保留a标签的href属性
+      if (el.tagName.toLowerCase() === 'a') {
+        const href = el.getAttribute('href')
+        // 移除所有属性
+        while (el.attributes.length > 0) {
+          el.removeAttribute(el.attributes[0].name)
+        }
+        // 恢复href属性
+        if (href) {
+          el.setAttribute('href', href)
+        }
+      }
+      // 对于其他元素，移除所有属性
+      else {
+        while (el.attributes.length > 0) {
+          el.removeAttribute(el.attributes[0].name)
+        }
+      }
+    })
+
+    // 移除所有span, div等通常用于样式的元素，但保留其内容
+    const styleElements = tempContainer.querySelectorAll('span, div')
+    styleElements.forEach((el) => {
+      // 防止替换已经处理过的代码和格式元素
+      if (el.parentNode
+        && !el.querySelector('pre')
+        && !el.querySelector('code')
+        && !el.querySelector('ul, ol, li')
+        && el.tagName.toLowerCase() !== 'pre'
+        && el.tagName.toLowerCase() !== 'code') {
+        // 替换元素内容，保留文本和格式化元素
+        const fragment = document.createDocumentFragment()
+        while (el.firstChild) {
+          fragment.appendChild(el.firstChild)
+        }
+        el.parentNode.replaceChild(fragment, el)
+      }
+    })
+
+    // 移除所有样式和类属性
+    const allElements = tempContainer.querySelectorAll('*')
+    allElements.forEach((el) => {
+      el.removeAttribute('style')
+      el.removeAttribute('class')
+    })
+
+    // 移除脚本标签
+    const scriptElements = tempContainer.querySelectorAll('script')
+    scriptElements.forEach(el => el.remove())
+
+    // 移除空白元素
+    this.removeEmptyElements(tempContainer)
+
+    // 返回清理后的HTML内容
+    return tempContainer.innerHTML
+  }
+
+  /**
+   * 递归移除空白元素
+   * @param element 要处理的元素
+   */
+  private removeEmptyElements(element: Element): void {
+    // 获取所有子元素
+    const children = Array.from(element.children)
+
+    // 递归处理每个子元素
+    for (const child of children) {
+      this.removeEmptyElements(child)
+    }
+
+    // 如果当前元素没有子元素且内容为空，则移除它
+    if (element.children.length === 0
+      && !element.textContent?.trim()
+      && element.tagName.toLowerCase() !== 'br'
+      && element.tagName.toLowerCase() !== 'img') {
+      element.remove()
+    }
+  }
+
+  /**
    * 获取聊天数据的抽象方法，由子类实现
    * @returns Promise<ChatData | null>
    */
@@ -118,4 +237,9 @@ export interface ChatData {
   title: string
   url: string
   messages: ChatMessage[]
+  metadata?: {
+    extractTime: string
+    version: string
+    [key: string]: any
+  }
 }

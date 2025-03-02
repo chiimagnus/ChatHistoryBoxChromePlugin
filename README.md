@@ -27,11 +27,15 @@
   - 包含我们的主要功能：聊天记录提取按钮和逻辑
   - `views/App.vue` - 这里实现了提取聊天记录的全部功能
   - `index.ts` - 负责将按钮注入到deepseek网页中
+  - `extractors/` - 不同平台的聊天记录提取器
+    - `BaseExtractor.ts` - 提取器基类，包含通用的HTML清理功能
+    - `DeepseekExtractor.ts` - Deepseek平台特定提取器
+    - `YuanbaoExtractor.ts` - 腾讯元宝平台特定提取器
 - `src/manifest.ts` - 扩展的"身份证"
   - 定义了扩展需要的权限（下载、访问网站等）
-  - 设置了内容脚本匹配的网站规则（deepseek.com/ai）
+  - 设置了内容脚本匹配的网站规则
 
-### 次要文件夹（暂不需要关注）
+### 次要文件夹
   - `src/popup/` - 点击浏览器工具栏图标显示的弹出窗口
   - `src/options/` - 扩展设置页面
   - `src/background/` - 后台服务脚本

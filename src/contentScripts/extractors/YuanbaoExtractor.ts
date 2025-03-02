@@ -80,13 +80,16 @@ export class YuanbaoExtractor extends BaseExtractor {
 
     // 添加AI回答
     aiResponseElements.forEach((element) => {
-      const content = element.innerHTML || ''
-      if (content) {
+      // 使用基类的HTML清理方法获取干净的内容
+      const cleanedContent = this.cleanHTML(element)
+
+      // 添加到消息数组
+      if (cleanedContent) {
         allMessageElements.push({
           type: 'assistant',
           element,
           position: this.getElementPosition(element),
-          content,
+          content: cleanedContent,
         })
       }
     })
@@ -159,10 +162,18 @@ export class YuanbaoExtractor extends BaseExtractor {
       }
     })
 
+    // 添加元数据
+    const metadata = {
+      extractTime: new Date().toISOString(),
+      version: '1.0.0',
+      platform: 'yuanbao',
+    }
+
     return {
       title,
       url: window.location.href,
       messages,
+      metadata,
     }
   }
 }

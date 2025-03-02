@@ -2,7 +2,7 @@
  * Deepseek聊天记录提取器
  * 实现了从Deepseek网站提取聊天记录的具体逻辑
  */
-import { BaseExtractor, type ChatData } from './BaseExtractor'
+import { BaseExtractor, type ChatData, type ChatMessage } from './BaseExtractor'
 
 export class DeepseekExtractor extends BaseExtractor {
   /**
@@ -39,10 +39,17 @@ export class DeepseekExtractor extends BaseExtractor {
 
     // 提取聊天标题
     const titleElement = document.querySelector('div[class^="d8ed659a"]')
-    const title = titleElement ? titleElement.textContent.trim() : '未提取到标题'
+    const title = titleElement?.textContent?.trim() || '未提取到标题'
+
+    // 定义消息元素类型接口
+    interface MessageElement {
+      type: 'user' | 'thinking' | 'assistant'
+      element: Element
+      position: number
+    }
 
     // 收集所有消息并保存它们的位置信息
-    const allMessageElements = []
+    const allMessageElements: MessageElement[] = []
 
     // 添加用户消息
     userMessages.forEach((element) => {
@@ -75,17 +82,17 @@ export class DeepseekExtractor extends BaseExtractor {
     allMessageElements.sort((a, b) => a.position - b.position)
 
     // 构建最终的消息数组
-    const messages = []
+    const messages: ChatMessage[] = []
 
     // 处理页面中的所有消息，按顺序组织成规范格式
     let messageIndex = 0
-    let currentType = null
+    let currentType: 'user' | 'thinking' | 'assistant' | null = null
 
     allMessageElements.forEach((messageElement) => {
       // 如果遇到用户消息，开始新的对话组
       if (messageElement.type === 'user') {
         currentType = 'user'
-        const content = messageElement.element.textContent.trim()
+        const content = messageElement.element.textContent?.trim() || ''
         if (content) {
           messages.push({
             id: `user-${messageIndex}`,
@@ -99,7 +106,7 @@ export class DeepseekExtractor extends BaseExtractor {
         currentType = 'thinking'
         const paragraphs = Array.from(messageElement.element.querySelectorAll('p[class^="ba9"]'))
         if (paragraphs.length > 0) {
-          const content = paragraphs.map(p => p.textContent.trim()).join('\n\n')
+          const content = paragraphs.map(p => p.textContent?.trim() || '').join('\n\n')
           if (content) {
             messages.push({
               id: `ai-thinking-${messageIndex}`,
@@ -112,7 +119,8 @@ export class DeepseekExtractor extends BaseExtractor {
       // 如果遇到AI回答，并且上一条是用户消息或AI思考，则关联到当前对话组
       else if (messageElement.type === 'assistant' && (currentType === 'user' || currentType === 'thinking')) {
         currentType = 'assistant'
-        const content = messageElement.element.innerHTML
+        // 使用cleanHTML方法处理HTML内容
+        const content = this.cleanHTML(messageElement.element)
         if (content) {
           messages.push({
             id: `ai-response-${messageIndex}`,
@@ -131,10 +139,18 @@ export class DeepseekExtractor extends BaseExtractor {
       }
     })
 
+    // 添加元数据
+    const metadata = {
+      extractTime: new Date().toISOString(),
+      version: '1.0.0',
+      platform: 'deepseek',
+    }
+
     return {
       title,
       url: window.location.href,
       messages,
+      metadata,
     }
   }
 }
